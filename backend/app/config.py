@@ -66,7 +66,11 @@ def get_settings() -> Settings:
     )
     cors_origins = [origin.strip() for origin in cors_raw.split(",") if origin.strip()]
 
-    raw_data_dir = Path(os.getenv("LOCAL_DATA_DIR", "data"))
+    # Vercel's deployed function filesystem is read-only. /tmp is writable but
+    # ephemeral and is not durable storage; configure a real storage adapter before
+    # using this deployment for persistent customer records.
+    default_data_dir = "/tmp/site-to-cash" if os.getenv("VERCEL") == "1" else "data"
+    raw_data_dir = Path(os.getenv("LOCAL_DATA_DIR", default_data_dir))
     local_data_dir = (
         raw_data_dir if raw_data_dir.is_absolute() else (BACKEND_ROOT / raw_data_dir)
     )

@@ -199,3 +199,51 @@ backend/.venv/bin/python -m pytest -c backend/pytest.ini backend/tests -v
 cd frontend
 npm run build
 ```
+
+
+## Vercel deployment (multi-service)
+
+The repository includes a root-level `vercel.json` that deploys two public services:
+
+- `backend`: FastAPI application rooted at `backend/`, entrypoint `app.main:app`.
+- `frontend`: Vite application rooted at `frontend/`.
+- `/api` and `/api/*` are routed to the backend. All other paths are routed to the frontend.
+- No private/internal service bindings are required. The frontend uses same-origin `/api/...` requests.
+
+### Import into Vercel
+
+1. Push this repository to GitHub.
+2. In Vercel, import the repository.
+3. Select the **Services** framework/preset if prompted and keep the project root at the repository root (`./`).
+4. Add `GEMINI_API_KEY` in the Vercel project's Environment Variables for each environment where AI features should run. Do not commit secrets or `.env`.
+5. Deploy.
+
+The frontend's `VITE_API_BASE_URL` may remain unset because requests use same-origin `/api` routes.
+
+### Important persistence and security limitations
+
+> [!WARNING]
+> This repository is a prototype and is **not ready for confidential multi-customer production data**. Authentication, session tokens, and user/tenant RBAC are not implemented. Do not expose sensitive customer contracts, project records, or commercial documents to an untrusted public deployment.
+
+The backend's local JSON/file storage is not durable on Vercel. The deployment-specific default uses `/tmp/site-to-cash` so writes do not target the read-only function bundle, but `/tmp` is temporary, can be cleared, and is not shared durable storage across function instances. Records and uploaded files may disappear or be unavailable on later requests.
+
+`STORAGE_BACKEND=gcp` is not a ready-to-use persistence option in this repository; the GCS/Firestore adapter is not implemented. Before relying on this deployment for real records, implement and configure durable object storage and database adapters, then add authentication and tenant-level authorization. Do not treat the `/tmp` fallback as a production data solution.
+
+### Deployment checks
+
+Run locally before deploying:
+
+```bash
+cd frontend
+npm install
+npm run build
+cd ..
+```
+
+```bash
+python -m venv .venv
+# Activate the virtual environment, then:
+pip install -r backend/requirements.txt
+python -m pytest -c backend/pytest.ini backend/tests -v
+```
+

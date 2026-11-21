@@ -74,3 +74,21 @@ def test_empty_dashboard_and_missing_case_report_return_expected_responses(
         json={"prepared_by": "QS Reviewer"},
     )
     assert missing_report.status_code == 404
+
+def test_vercel_uses_writable_ephemeral_data_directory(monkeypatch) -> None:
+    from app.config import get_settings
+
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.delenv("LOCAL_DATA_DIR", raising=False)
+
+    assert get_settings().local_data_dir == Path("/tmp/site-to-cash")
+
+
+def test_local_data_dir_environment_override_is_respected(monkeypatch, tmp_path: Path) -> None:
+    from app.config import get_settings
+
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.setenv("LOCAL_DATA_DIR", str(tmp_path))
+
+    assert get_settings().local_data_dir == tmp_path
+
